@@ -164,13 +164,11 @@ public class AppianKafkaUtil {
       }
 
       if (StringUtils.isNotBlank(keyClass)) {
-        // props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, Class.forName(keyClass));
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 
       }
       if (StringUtils.isNotBlank(valueClass)) {
-        // props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, Class.forName(valueClass));
+         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
       }
     } else {
       // Producer
