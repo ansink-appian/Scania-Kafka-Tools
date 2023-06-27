@@ -3,7 +3,7 @@
   <plugin-info>
     <description>Kafka Tools</description>
     <vendor name="Appian Corporation" url="https://www.appian.com" />
-    <version>1.1.0</version>
+    <version>1.2.0</version>
     <application-version min="18.2.0" />
   </plugin-info>
 
