@@ -12,6 +12,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -51,25 +52,25 @@ public class AppianKafkaUtil {
     SCRAM_SHA_256("SCRAM-SHA-256", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"%s\" password=\"%s\";"),
     SCRAM_SHA_512("SCRAM-SHA-512", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"%s\" password=\"%s\";"),
     OAUTHBEARER("OAUTHBEARER",
-      "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required clientId=\"%s\" clientSecret=\"%s\";");
+            "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required clientId=\"%s\" clientSecret=\"%s\";");
 
-  private String name;
-  private String jaasTemplate;
+    private String name;
+    private String jaasTemplate;
 
-  SaslMechanism(String name, String jaasTemplate) {
-    this.name = name;
-    this.jaasTemplate = jaasTemplate;
-  }
+    SaslMechanism(String name, String jaasTemplate) {
+      this.name = name;
+      this.jaasTemplate = jaasTemplate;
+    }
 
-  String getJaasCfg(String username, String password) {
-    return String.format(jaasTemplate, username, password);
-  }
+    String getJaasCfg(String username, String password) {
+      return String.format(jaasTemplate, username, password);
+    }
   }
 
   public static void setProperties(SecureCredentialsStore scs, ContentService cs, Properties props, String serverAndPorts,
-    String securityProtocol, String saslMechanism, String scsKey, String consumerGroupId, String keyClass,
-    String valueClass, Integer sessionTimeoutMs, Long trustStoreDoc,
-    Long keyStoreDoc, boolean isConsumer) throws Exception {
+                                   String securityProtocol, String saslMechanism, String scsKey, String consumerGroupId, String keyClass,
+                                   String valueClass, Integer sessionTimeoutMs, Long trustStoreDoc,
+                                   Long keyStoreDoc, boolean isConsumer) throws Exception {
     // Server
     props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, serverAndPorts);
 
@@ -81,72 +82,76 @@ public class AppianKafkaUtil {
 
     // Handle SSL
     switch (sp) {
-    case SSL:
-    case SASL_SSL:
+      case SSL:
+      case SASL_SSL:
 
-      if (trustStoreDoc != null && trustStoreDoc > 0) {
-        Content latestTrustStoreDoc = cs.getVersion(trustStoreDoc, ContentConstants.VERSION_CURRENT);
-        String trustStorePath = cs.getInternalFilename(latestTrustStoreDoc.getId());
-        props.put(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, trustStorePath);
-      }
-      if (keyStoreDoc != null && keyStoreDoc > 0) {
-        Content latestKeyStoreDoc = cs.getVersion(keyStoreDoc, ContentConstants.VERSION_CURRENT);
-        String keyStorePath = cs.getInternalFilename(latestKeyStoreDoc.getId());
-        props.put(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG, keyStorePath);
-      }
+        if (trustStoreDoc != null && trustStoreDoc > 0) {
+          Content latestTrustStoreDoc = cs.getVersion(trustStoreDoc, ContentConstants.VERSION_CURRENT);
+          String trustStorePath = cs.getInternalFilename(latestTrustStoreDoc.getId());
+          props.put(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, trustStorePath);
+        }
+        if (keyStoreDoc != null && keyStoreDoc > 0) {
+          Content latestKeyStoreDoc = cs.getVersion(keyStoreDoc, ContentConstants.VERSION_CURRENT);
+          String keyStorePath = cs.getInternalFilename(latestKeyStoreDoc.getId());
+          props.put(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG, keyStorePath);
+        }
 
-      Map<String, String> scsMap = scs.getSystemSecuredValues(scsKey);
-      String trustStorePwd = scsMap.get(SCS_TRUSTSTORE_PWD_KEY);
-      if (StringUtils.isNotBlank(trustStorePwd)) {
-        props.put(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, trustStorePwd);
-      }
-      String keyStorePwd = scsMap.get(SCS_KEYSTORE_PWD_KEY);
-      if (StringUtils.isNotBlank(keyStorePwd)) {
-        props.put(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, keyStorePwd);
-      }
-      String privatePwd = scsMap.get(SCS_KEYSTORE_PRIVATE_KEY_PWD_KEY);
-      if (StringUtils.isNotBlank(privatePwd)) {
-        props.put(SslConfigs.SSL_KEY_PASSWORD_CONFIG, privatePwd);
-      }
-      break;
+        Map<String, String> scsMap = scs.getSystemSecuredValues(scsKey);
+        String trustStorePwd = scsMap.get(SCS_TRUSTSTORE_PWD_KEY);
+        if (StringUtils.isNotBlank(trustStorePwd)) {
+          props.put(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, trustStorePwd);
+        }
+        String keyStorePwd = scsMap.get(SCS_KEYSTORE_PWD_KEY);
+        if (StringUtils.isNotBlank(keyStorePwd)) {
+          props.put(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, keyStorePwd);
+        }
+        String privatePwd = scsMap.get(SCS_KEYSTORE_PRIVATE_KEY_PWD_KEY);
+        if (StringUtils.isNotBlank(privatePwd)) {
+          props.put(SslConfigs.SSL_KEY_PASSWORD_CONFIG, privatePwd);
+        }
+        break;
     }
 
     // Handle SASL
     switch (sp) {
-    case SASL_PLAINTEXT:
-    case SASL_SSL:
-      // Handle OAUTH
-      if (sm.name == "OAUTHBEARER") {
-        LOG.debug("Switch for OAUTHBEARER: ");
+      case SASL_PLAINTEXT:
+      case SASL_SSL:
+        // Handle OAUTH
+        if (sm.name == "OAUTHBEARER") {
+          LOG.debug("Switch for OAUTHBEARER: ");
 
-        LOG.debug("IP Address: " + getIp());
-        props.setProperty("ssl.protocol", "SSL");
-        props.setProperty("ssl.truststore.type", "JKS");
-        Map<String, String> scsMap = scs.getSystemSecuredValues(scsKey);
-        String clientId = scsMap.get(SCS_KEYSTORE_SASL_CLIENTID);
-        String clientSecret = scsMap.get(SCS_KEYSTORE_SASL_CLIENTSECRET);
-        String tokenUrl = scsMap.get(SCS_KEYSTORE_SASL_TOKENURL);
-        String groupId = scsMap.get(SCS_KEYSTORE_SASL_GROUPID);
-        props.put(SaslConfigs.SASL_JAAS_CONFIG, sm.getJaasCfg(clientId, clientSecret));
-        props.put("sasl.oauthbearer.token.endpoint.url", tokenUrl);
-        props.put("sasl.mechanism", "OAUTHBEARER");
-        props.put("sasl.login.callback.handler.class",
-          "org.apache.kafka.common.security.oauthbearer.secured.OAuthBearerLoginCallbackHandler");
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-      } else {
+          LOG.debug("IP Address: " + getIp());
+          props.put("ssl.protocol", "SSL");
+          props.put("ssl.truststore.type", "JKS");
+          Map<String, String> scsMap = scs.getSystemSecuredValues(scsKey);
+          String clientId = scsMap.get(SCS_KEYSTORE_SASL_CLIENTID);
+          String clientSecret = scsMap.get(SCS_KEYSTORE_SASL_CLIENTSECRET);
+          String tokenUrl = scsMap.get(SCS_KEYSTORE_SASL_TOKENURL);
+          String groupId = scsMap.get(SCS_KEYSTORE_SASL_GROUPID);
+          props.put(SaslConfigs.SASL_JAAS_CONFIG, sm.getJaasCfg(clientId, clientSecret));
+          props.put("sasl.oauthbearer.token.endpoint.url", tokenUrl);
+          props.put("sasl.mechanism", "OAUTHBEARER");
+          props.put("sasl.login.callback.handler.class",
+                  "org.apache.kafka.common.security.oauthbearer.secured.OAuthBearerLoginCallbackHandler");
+          props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+          // props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+          LOG.debug("clientId: " + clientId + "clientSecret: " + clientSecret);
+        } else {
 
-        Map<String, String> scsMap = scs.getSystemSecuredValues(scsKey);
-        String username = scsMap.get(SCS_KEYSTORE_SASL_USERNAME);
-        String password = scsMap.get(SCS_KEYSTORE_SASL_PASSWORD);
+          Map<String, String> scsMap = scs.getSystemSecuredValues(scsKey);
+          String username = scsMap.get(SCS_KEYSTORE_SASL_USERNAME);
+          String password = scsMap.get(SCS_KEYSTORE_SASL_PASSWORD);
 
-        props.put(SaslConfigs.SASL_MECHANISM, sm.name);
-        props.put(SaslConfigs.SASL_JAAS_CONFIG, sm.getJaasCfg(username, password));
-      }
-      break;
+          props.put(SaslConfigs.SASL_MECHANISM, sm.name);
+          props.put(SaslConfigs.SASL_JAAS_CONFIG, sm.getJaasCfg(username, password));
+        }
+        break;
     }
     if (isConsumer) {
       // Consumer
+
+      props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
       if (StringUtils.isNotBlank(consumerGroupId)) {
         props.put(ConsumerConfig.GROUP_ID_CONFIG, consumerGroupId);
       }
@@ -157,12 +162,14 @@ public class AppianKafkaUtil {
         props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
         props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, (sessionTimeoutMs / 3));
       }
-      // props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
       if (StringUtils.isNotBlank(keyClass)) {
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, Class.forName(keyClass));
+        // props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, Class.forName(keyClass));
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+
       }
       if (StringUtils.isNotBlank(valueClass)) {
+        // props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, Class.forName(valueClass));
       }
     } else {
@@ -200,7 +207,7 @@ public class AppianKafkaUtil {
     BufferedReader in = null;
     try {
       in = new BufferedReader(new InputStreamReader(
-        whatismyip.openStream()));
+              whatismyip.openStream()));
       String ip = in.readLine();
       return ip;
     } finally {

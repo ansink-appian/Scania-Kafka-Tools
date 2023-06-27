@@ -60,11 +60,6 @@
         <detail>OAUTHBEARER</detail>
         <value>OAUTHBEARER</value>
       </item>
-      <item>
-        <label>OAUTHCALLBACKCLASS</label>
-        <detail>OAUTHCALLBACKCLASS</detail>
-        <value>OAUTHCALLBACKCLASS</value>
-      </item>
     </items>
   </enumeration>
 

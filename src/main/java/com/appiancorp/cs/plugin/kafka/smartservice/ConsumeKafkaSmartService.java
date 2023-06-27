@@ -80,10 +80,7 @@ public class ConsumeKafkaSmartService extends AppianSmartService {
   private Long _trustStoreDoc;
   private Long _keyStoreDoc;
   private String _messageFilter;
-  private String _clientId;
-  private String _clientSecret;
-  private String _tokenUrl;
-  private String _grantType;
+
   // Outputs
   private Boolean _success;
   private String _errorMessage = "";
@@ -424,38 +421,6 @@ public class ConsumeKafkaSmartService extends AppianSmartService {
     if (LOG.isDebugEnabled())
       LOG.debug("Input Query Filter value: " + val);
     _messageFilter = val;
-  }
-
-  @Input(required = Required.OPTIONAL)
-  public void setClientId(String clientId) {
-    if (LOG.isDebugEnabled())
-      LOG.debug("Input clientId value: " + clientId);
-
-    _clientId = clientId;
-  }
-
-  @Input(required = Required.OPTIONAL)
-  public void setClientSecret(String clientSecret) {
-    if (LOG.isDebugEnabled())
-      LOG.debug("Input clientSecret value: " + clientSecret);
-
-    _clientSecret = clientSecret;
-  }
-
-  @Input(required = Required.OPTIONAL)
-  public void setTokenUrl(String tokenUrl) {
-    if (LOG.isDebugEnabled())
-      LOG.debug("Input tokenUrl value: " + tokenUrl);
-
-    _tokenUrl = tokenUrl;
-  }
-
-  @Input(required = Required.OPTIONAL)
-  public void setGrantType(String grantType) {
-    if (LOG.isDebugEnabled())
-      LOG.debug("Input grantType value: " + grantType);
-
-    _grantType = grantType;
   }
 
   // Outputs getters
