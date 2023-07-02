@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.Properties;
 import javax.naming.Context;
 
-import com.appiancorp.cs.plugin.kafka.consumer.AppianKafkaConsumerThread;
-import com.appiancorp.cs.plugin.kafka.AppianKafkaUtil;
+import com.appiancorp.cs.plugin.kafka.consumer.AppianKafkaConsumerThread_V1;
+import com.appiancorp.cs.plugin.kafka.AppianKafkaUtil_V1;
 import com.appiancorp.suiteapi.content.ContentService;
 import com.appiancorp.suiteapi.knowledge.DocumentDataType;
 
@@ -23,7 +23,7 @@ import com.appiancorp.suiteapi.security.external.SecureCredentialsStore;
 
 import org.apache.commons.text.StringEscapeUtils;
 
-@PaletteInfo(paletteCategory = "Integration Services", palette = "Connectivity Services")
+@PaletteInfo(paletteCategory = "#Deprecated#", palette = "#Deprecated#")
 @Order({
   // inputs
   "Servers", "DataSourceName", "TransactionTableName",
@@ -31,13 +31,13 @@ import org.apache.commons.text.StringEscapeUtils;
 
   "GroupId", "NumConsumers", "Topic", "JobTypeId",
   "RuntimeInMinutes", "PollingIntervalInMs", "SleepingIntervalInMs", "SessionTimeout",
-  "DeserializerClassName", "MessageFilter", "AutoOffsetResetConfig",
+  "DeserializerClassName", "MessageFilter",
 
   // outputs
   "Success", "ErrorMessage"
 })
 
-public class ConsumeKafkaSmartService extends AppianSmartService {
+public class ConsumeKafkaSmartService_V1 extends AppianSmartService {
 
   private static final Logger LOG = Logger.getLogger(ConsumeKafkaSmartService.class);
 
@@ -80,13 +80,12 @@ public class ConsumeKafkaSmartService extends AppianSmartService {
   private Long _trustStoreDoc;
   private Long _keyStoreDoc;
   private String _messageFilter;
-  private String _offset;
 
   // Outputs
   private Boolean _success;
   private String _errorMessage = "";
 
-  public ConsumeKafkaSmartService(Context ctx, SecureCredentialsStore scs, ContentService cs) {
+  public ConsumeKafkaSmartService_V1(Context ctx, SecureCredentialsStore scs, ContentService cs) {
     super();
     _scs = scs;
     _ctx = ctx;
@@ -99,7 +98,7 @@ public class ConsumeKafkaSmartService extends AppianSmartService {
 
     /* Validate Security Protocol */
     try {
-      AppianKafkaUtil.SecurityProtocol sp = AppianKafkaUtil.SecurityProtocol.valueOf(_securityProtocol);
+      AppianKafkaUtil_V1.SecurityProtocol sp = AppianKafkaUtil_V1.SecurityProtocol.valueOf(_securityProtocol);
 
       switch (sp) {
       /* case SSL: */ // TODO verify is needed for SSL
@@ -125,7 +124,7 @@ public class ConsumeKafkaSmartService extends AppianSmartService {
 
     /* Validate SASL Mechanism */
     try {
-      AppianKafkaUtil.SaslMechanism sp = AppianKafkaUtil.SaslMechanism.valueOf(_saslMechanism);
+      AppianKafkaUtil_V1.SaslMechanism sp = AppianKafkaUtil_V1.SaslMechanism.valueOf(_saslMechanism);
     } catch (IllegalArgumentException e) {
       messageContainer.addError("SASLMechanism", "saslMechanism.invalid");
     }
@@ -166,7 +165,7 @@ public class ConsumeKafkaSmartService extends AppianSmartService {
       messageContainer.addError("SleepingIntervalInMs", "sleepingInterval.low");
     }
 
-    if (StringUtils.isNotBlank(_messageFilter) && !AppianKafkaUtil.validateMessageFilter(_messageFilter)) {
+    if (StringUtils.isNotBlank(_messageFilter) && !AppianKafkaUtil_V1.validateMessageFilter(_messageFilter)) {
       messageContainer.addError("MessageFilter", "messageFilter.invalid");
     }
 
@@ -182,8 +181,8 @@ public class ConsumeKafkaSmartService extends AppianSmartService {
 
     try {
 
-      AppianKafkaUtil.setProperties(_scs, _cs, _props, _servers, _securityProtocol, _saslMechanism, _storeKey, _groupId,
-        _deserializerClassName, _deserializerClassName, _sessionTimeoutMs, _trustStoreDoc, _keyStoreDoc, true, _offset);
+      AppianKafkaUtil_V1.setProperties(_scs, _cs, _props, _servers, _securityProtocol, _saslMechanism, _storeKey, _groupId,
+        _deserializerClassName, _deserializerClassName, _sessionTimeoutMs, _trustStoreDoc, _keyStoreDoc, true);
 
       runConsumersForGroup();
 
@@ -198,13 +197,13 @@ public class ConsumeKafkaSmartService extends AppianSmartService {
 
   private void runConsumersForGroup() throws Exception {
     long runStartTime = System.currentTimeMillis();
-    ArrayList<AppianKafkaConsumerThread> consumerThreads = new ArrayList<AppianKafkaConsumerThread>();
+    ArrayList<AppianKafkaConsumerThread_V1> consumerThreads = new ArrayList<AppianKafkaConsumerThread_V1>();
 
     for (int counter = 0; counter < _numConsumers; counter++) {
       if (LOG.isDebugEnabled())
         LOG.debug("Starting consumer thread #" + counter);
 
-      AppianKafkaConsumerThread consumerThread = new AppianKafkaConsumerThread(_ctx, _props,
+      AppianKafkaConsumerThread_V1 consumerThread = new AppianKafkaConsumerThread_V1(_ctx, _props,
         _dsName,
         _transactionTableName,
         _topic,
@@ -225,7 +224,7 @@ public class ConsumeKafkaSmartService extends AppianSmartService {
 
     while (true) {
       boolean allStopped = true;
-      for (AppianKafkaConsumerThread consumer : consumerThreads) {
+      for (AppianKafkaConsumerThread_V1 consumer : consumerThreads) {
         if (!consumer.isRunning()) {
           if (LOG.isDebugEnabled())
             LOG.debug("Consumer: " + consumer.getId() + " finished");
@@ -264,7 +263,7 @@ public class ConsumeKafkaSmartService extends AppianSmartService {
         if (LOG.isDebugEnabled()) {
           LOG.debug("Runtime expired. Stopping all consumers");
         }
-        for (AppianKafkaConsumerThread consumer : consumerThreads) {
+        for (AppianKafkaConsumerThread_V1 consumer : consumerThreads) {
           consumer.stopConsumer();
         }
         // Sleeping while the threads stop
@@ -352,7 +351,7 @@ public class ConsumeKafkaSmartService extends AppianSmartService {
     _numConsumers = num;
   }
 
-  @Input(required = Required.ALWAYS, defaultValue = AppianKafkaUtil.TRANSACTION_TABLE_NAME)
+  @Input(required = Required.ALWAYS, defaultValue = AppianKafkaUtil_V1.TRANSACTION_TABLE_NAME)
   public void setTransactionTableName(String name) {
     if (LOG.isDebugEnabled())
       LOG.debug("Input Transaction Table Name, value: " + name);
@@ -422,14 +421,6 @@ public class ConsumeKafkaSmartService extends AppianSmartService {
     if (LOG.isDebugEnabled())
       LOG.debug("Input Query Filter value: " + val);
     _messageFilter = val;
-  }
-
-  @Input(required = Required.OPTIONAL, enumeration = "kafkaOffsetConfig")
-  public void setOffset(String offset) {
-    if (LOG.isDebugEnabled())
-      LOG.debug("Input offset value: " + offset);
-
-    _offset = offset;
   }
 
   // Outputs getters

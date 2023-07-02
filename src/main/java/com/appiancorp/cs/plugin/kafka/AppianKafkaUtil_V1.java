@@ -19,20 +19,15 @@ import java.util.Properties;
 
 import net.minidev.json.JSONArray;
 
-import static com.appiancorp.cs.plugin.kafka.AppianKafkaUtil.SaslMechanism.OAUTHBEARER;
+public class AppianKafkaUtil_V1 {
 
-public class AppianKafkaUtil {
-
-  private static final Logger LOG = Logger.getLogger(AppianKafkaUtil.class);
+  private static Logger LOG = Logger.getLogger(AppianKafkaUtil.class);
 
   public static final String SCS_TRUSTSTORE_PWD_KEY = "truststorepwd";
   public static final String SCS_KEYSTORE_PWD_KEY = "keystorepwd";
   public static final String SCS_KEYSTORE_PRIVATE_KEY_PWD_KEY = "privatekeypwd";
   public static final String SCS_KEYSTORE_SASL_USERNAME = "username";
   public static final String SCS_KEYSTORE_SASL_PASSWORD = "password";
-  public static final String SCS_KEYSTORE_SASL_CLIENTID = "clientid";
-  public static final String SCS_KEYSTORE_SASL_CLIENTSECRET = "clientsecret";
-  public static final String SCS_KEYSTORE_SASL_TOKENURL = "tokenurl";
   public static final String TRANSACTION_TABLE_NAME = "tm_job_transaction";
 
   public enum SecurityProtocol {
@@ -42,17 +37,10 @@ public class AppianKafkaUtil {
     SASL_SSL
   }
 
-  public enum AutoOffsetResetConfig {
-    earliest,
-    latest
-  }
-
   public enum SaslMechanism {
     PLAIN("PLAIN", "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"%s\" password=\"%s\";"),
     SCRAM_SHA_256("SCRAM-SHA-256", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"%s\" password=\"%s\";"),
-    SCRAM_SHA_512("SCRAM-SHA-512", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"%s\" password=\"%s\";"),
-    OAUTHBEARER("OAUTHBEARER",
-      "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required clientId=\"%s\" clientSecret=\"%s\";");
+    SCRAM_SHA_512("SCRAM-SHA-512", "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"%s\" password=\"%s\";");
 
   private String name;
   private String jaasTemplate;
@@ -70,7 +58,7 @@ public class AppianKafkaUtil {
   public static void setProperties(SecureCredentialsStore scs, ContentService cs, Properties props, String serverAndPorts,
     String securityProtocol, String saslMechanism, String scsKey, String consumerGroupId, String keyClass,
     String valueClass, Integer sessionTimeoutMs, Long trustStoreDoc,
-    Long keyStoreDoc, boolean isConsumer, String offset) throws Exception {
+    Long keyStoreDoc, boolean isConsumer) throws Exception {
     // Server
     props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, serverAndPorts);
 
@@ -84,7 +72,6 @@ public class AppianKafkaUtil {
     switch (sp) {
     case SSL:
     case SASL_SSL:
-
       if (trustStoreDoc != null && trustStoreDoc > 0) {
         Content latestTrustStoreDoc = cs.getVersion(trustStoreDoc, ContentConstants.VERSION_CURRENT);
         String trustStorePath = cs.getInternalFilename(latestTrustStoreDoc.getId());
@@ -95,8 +82,7 @@ public class AppianKafkaUtil {
         String keyStorePath = cs.getInternalFilename(latestKeyStoreDoc.getId());
         props.put(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG, keyStorePath);
       }
-      props.put("ssl.protocol", "SSL");
-      props.put("ssl.truststore.type", "JKS");
+
       Map<String, String> scsMap = scs.getSystemSecuredValues(scsKey);
       String trustStorePwd = scsMap.get(SCS_TRUSTSTORE_PWD_KEY);
       if (StringUtils.isNotBlank(trustStorePwd)) {
@@ -117,41 +103,17 @@ public class AppianKafkaUtil {
     switch (sp) {
     case SASL_PLAINTEXT:
     case SASL_SSL:
-      // Handle OAUTH
-      if (sm.name.equals(OAUTHBEARER.name)) {
-        LOG.debug("Switch for OAUTHBEARER: ");
-        Map<String, String> scsMap = scs.getSystemSecuredValues(scsKey);
-        String clientId = scsMap.get(SCS_KEYSTORE_SASL_CLIENTID);
-        String clientSecret = scsMap.get(SCS_KEYSTORE_SASL_CLIENTSECRET);
-        String tokenUrl = scsMap.get(SCS_KEYSTORE_SASL_TOKENURL);
+      Map<String, String> scsMap = scs.getSystemSecuredValues(scsKey);
+      String username = scsMap.get(SCS_KEYSTORE_SASL_USERNAME);
+      String password = scsMap.get(SCS_KEYSTORE_SASL_PASSWORD);
 
-        props.put(SaslConfigs.SASL_JAAS_CONFIG, sm.getJaasCfg(clientId, clientSecret));
-        props.put(SaslConfigs.SASL_MECHANISM, sm.name);
-        props.put("sasl.oauthbearer.token.endpoint.url", tokenUrl);
-        props.put("sasl.login.callback.handler.class",
-          "org.apache.kafka.common.security.oauthbearer.secured.OAuthBearerLoginCallbackHandler");
-      } else {
-        Map<String, String> scsMap = scs.getSystemSecuredValues(scsKey);
-        String username = scsMap.get(SCS_KEYSTORE_SASL_USERNAME);
-        String password = scsMap.get(SCS_KEYSTORE_SASL_PASSWORD);
-        props.put(SaslConfigs.SASL_MECHANISM, sm.name);
-        props.put(SaslConfigs.SASL_JAAS_CONFIG, sm.getJaasCfg(username, password));
-      }
+      props.put(SaslConfigs.SASL_MECHANISM, sm.name);
+      props.put(SaslConfigs.SASL_JAAS_CONFIG, sm.getJaasCfg(username, password));
       break;
     }
+
     if (isConsumer) {
       // Consumer
-      if (offset != null) {
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, offset);
-      } else {
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, AutoOffsetResetConfig.latest.name());
-      }
-      if (StringUtils.isNotBlank(keyClass)) {
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, Class.forName(keyClass));
-      }
-      if (StringUtils.isNotBlank(valueClass)) {
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, Class.forName(valueClass));
-      }
       if (StringUtils.isNotBlank(consumerGroupId)) {
         props.put(ConsumerConfig.GROUP_ID_CONFIG, consumerGroupId);
       }
@@ -162,9 +124,16 @@ public class AppianKafkaUtil {
         props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
         props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, (sessionTimeoutMs / 3));
       }
+      // props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+      if (StringUtils.isNotBlank(keyClass)) {
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, Class.forName(keyClass));
+      }
+      if (StringUtils.isNotBlank(valueClass)) {
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, Class.forName(valueClass));
+      }
     } else {
       // Producer
-
       if (StringUtils.isNotBlank(keyClass)) {
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, Class.forName(keyClass));
       }
@@ -183,7 +152,10 @@ public class AppianKafkaUtil {
       LOG.trace("filtered message: " + dataObject.toString());
 
       // If the filter returns an Empty JSON Array, skip the message
-      return dataObject instanceof JSONArray && ((JSONArray) dataObject).size() == 0;
+      if (dataObject instanceof JSONArray && ((JSONArray) dataObject).size() == 0)
+        return true;
+      else
+        return false;
     } catch (Exception e) {
       LOG.error("failed to filter: ", e);
       return false;
