@@ -4,7 +4,7 @@
     <description>Kafka Tools</description>
     <vendor name="Appian Corporation" url="https://www.appian.com" />
     <version>1.2.0</version>
-    <application-version min="18.2.0" />
+    <application-version min="23.1.0" />
   </plugin-info>
 
   <enumeration key="kafkaSecurityProtocols" type="3">
@@ -28,11 +28,6 @@
         <label>SASL_SSL</label>
         <detail>SASL_SSL</detail>
         <value>SASL_SSL</value>
-      </item>
-      <item>
-        <label>OAUTHBEARER</label>
-        <detail>OAUTHBEARER</detail>
-        <value>OAUTHBEARER</value>
       </item>
     </items>
   </enumeration>
@@ -63,10 +58,31 @@
     </items>
   </enumeration>
 
-  <smart-service name="Publish to Kafka" key="PublishToKafka"
+  <enumeration key="kafkaOffsetConfig" type="3">
+    <items>
+      <item>
+        <label>Earliest</label>
+        <detail>Reset the position to the “earliest” offset</detail>
+        <value>earliest</value>
+      </item>
+      <item>
+        <label>Latest</label>
+        <detail>Reset the position to the “latest” offset (Default Behaviour)</detail>
+        <value>latest</value>
+      </item>
+    </items>
+  </enumeration>
+
+  <smart-service name="Publish to Kafka" key="PublishToKafka_V1"
+    class="com.appiancorp.cs.plugin.kafka.smartservice.PublishKafkaSmartService_V1" />
+
+  <smart-service name="Publish to Kafka" key="PublishToKafka_V2"
     class="com.appiancorp.cs.plugin.kafka.smartservice.PublishKafkaSmartService" />
 
-  <smart-service name="Consume from Kafka" key="ConsumeFromKafka"
+  <smart-service name="Consume from Kafka" key="ConsumeFromKafka_V1"
+    class="com.appiancorp.cs.plugin.kafka.smartservice.ConsumeKafkaSmartService_V1" />
+
+  <smart-service name="Consume from Kafka" key="ConsumeFromKafka_V2"
     class="com.appiancorp.cs.plugin.kafka.smartservice.ConsumeKafkaSmartService" />
 
 </appian-plugin>

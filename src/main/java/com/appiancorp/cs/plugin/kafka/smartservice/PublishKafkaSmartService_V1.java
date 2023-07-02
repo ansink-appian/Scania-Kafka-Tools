@@ -1,26 +1,20 @@
 package com.appiancorp.cs.plugin.kafka.smartservice;
 
-import java.util.Properties;
-
-import javax.naming.Context;
-
-import org.apache.log4j.Logger;
-
-import com.appiancorp.cs.plugin.kafka.AppianKafkaUtil;
+import com.appiancorp.cs.plugin.kafka.AppianKafkaUtil_V1;
 import com.appiancorp.cs.plugin.kafka.producer.AppianKafkaProducer;
 import com.appiancorp.suiteapi.common.Name;
 import com.appiancorp.suiteapi.content.ContentService;
 import com.appiancorp.suiteapi.knowledge.DocumentDataType;
 import com.appiancorp.suiteapi.process.exceptions.SmartServiceException;
-import com.appiancorp.suiteapi.process.framework.AppianSmartService;
-import com.appiancorp.suiteapi.process.framework.Input;
-import com.appiancorp.suiteapi.process.framework.MessageContainer;
-import com.appiancorp.suiteapi.process.framework.Order;
-import com.appiancorp.suiteapi.process.framework.Required;
+import com.appiancorp.suiteapi.process.framework.*;
 import com.appiancorp.suiteapi.process.palette.PaletteInfo;
 import com.appiancorp.suiteapi.security.external.SecureCredentialsStore;
+import org.apache.log4j.Logger;
 
-@PaletteInfo(paletteCategory = "Integration Services", palette = "Connectivity Services")
+import javax.naming.Context;
+import java.util.Properties;
+
+@PaletteInfo(paletteCategory = "#Deprecated#", palette = "#Deprecated#")
 @Order({
   // inputs
   "SecureCredentialsStoreKey", "Servers", "Topic", "Payload", "SecurityProtocol", "SASLMechanism", "Truststore", "Keystore",
@@ -33,9 +27,9 @@ import com.appiancorp.suiteapi.security.external.SecureCredentialsStore;
 // Creating a producer for each message is going to be very inefficient. Producers are thread safe so we should be fine reusing them.
 // More research and reading required
 
-public class PublishKafkaSmartService extends AppianSmartService {
+public class PublishKafkaSmartService_V1 extends AppianSmartService {
 
-  private static final Logger LOG = Logger.getLogger(PublishKafkaSmartService.class);
+  private static final Logger LOG = Logger.getLogger(PublishKafkaSmartService_V1.class);
 
   private final SecureCredentialsStore _scs;
   private final ContentService _cs;
@@ -58,7 +52,7 @@ public class PublishKafkaSmartService extends AppianSmartService {
   private Boolean _success;
   private String _errorMessage;
 
-  public PublishKafkaSmartService(SecureCredentialsStore scs, ContentService cs, Context ctx) {
+  public PublishKafkaSmartService_V1(SecureCredentialsStore scs, ContentService cs, Context ctx) {
     super();
     if (LOG.isDebugEnabled())
       LOG.debug("DEBUG: instantiating");
@@ -74,7 +68,7 @@ public class PublishKafkaSmartService extends AppianSmartService {
 
     /* Validate Security Protocol */
     try {
-      AppianKafkaUtil.SecurityProtocol sp = AppianKafkaUtil.SecurityProtocol.valueOf(_securityProtocol);
+      AppianKafkaUtil_V1.SecurityProtocol sp = AppianKafkaUtil_V1.SecurityProtocol.valueOf(_securityProtocol);
 
       switch (sp) {
       /* case SSL: */ // TODO verify is needed for SSL
@@ -100,7 +94,7 @@ public class PublishKafkaSmartService extends AppianSmartService {
 
     /* Validate SASL Mechanism */
     try {
-      AppianKafkaUtil.SaslMechanism sp = AppianKafkaUtil.SaslMechanism.valueOf(_saslMechanism);
+      AppianKafkaUtil_V1.SaslMechanism sp = AppianKafkaUtil_V1.SaslMechanism.valueOf(_saslMechanism);
     } catch (IllegalArgumentException e) {
       messageContainer.addError("SASLMechanism", "saslMechanism.invalid");
     }
@@ -109,8 +103,8 @@ public class PublishKafkaSmartService extends AppianSmartService {
   @Override
   public void run() throws SmartServiceException {
     try {
-      AppianKafkaUtil.setProperties(_scs, _cs, _props, _servers, _securityProtocol, _saslMechanism, _storeKey, null,
-        SERIALIZER_CLASS_NAME, SERIALIZER_CLASS_NAME, null, _trustStoreDoc, _keyStoreDoc, false, null);
+      AppianKafkaUtil_V1.setProperties(_scs, _cs, _props, _servers, _securityProtocol, _saslMechanism, _storeKey, null,
+        SERIALIZER_CLASS_NAME, SERIALIZER_CLASS_NAME, null, _trustStoreDoc, _keyStoreDoc, false);
 
       AppianKafkaProducer kafkaProducer = new AppianKafkaProducer(_props);
       kafkaProducer.publish(_topic, _payload);
