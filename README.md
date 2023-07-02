@@ -27,6 +27,9 @@ To implement this plugin successfully in an application, you must:
         * truststorepwd
         * keystorepwd
         * privatekeypwd
+        * clientid
+        * clientsecret
+        * tokenurl
 1. Give Third-Party Credentials access to KafkaTools plugin
 
 ## Appian Secure Credentials Store
@@ -36,6 +39,9 @@ This plug-in uses a Third-Party Credentials Store to maintain the credentials fo
 * truststorepwd: password of the TrustStore containing the Kafka server certificate. This is only required when using SSL or SASL_SSL.
 * keystorepwd: password of the KeyStore containing the client private key to use to authenticate with the Kafka server. This is only required when using SSL.
 * privatekeypwd: password of the private key to use to authenticate with the Kafka server. This is only required when using SSL.
+* clientid: The client id of the oauth provider to use to authenticate with the Kafka server. This is only required when using OAUTHBEARER.
+* clientsecret: The client secret of the oauth provider to use to authenticate with the Kafka server. This is only required when using OAUTHBEARER.
+* tokenurl: The token url of the oauth provider use to authenticate with the Kafka server. This is only required when using OAUTHBEARER.
 
 It is recommended that you mask the value of the passwords. Once the entry is created, the name will be used as a required input parameter to Kafka Tools Smart Service nodes.
 
@@ -55,9 +61,10 @@ This Smart Service implements Kafka Producer and sends a single payload to a sin
 * **Topic:** provide the name of the kafka server topic
 * **Payload:** text value of the payload
 * **Security Protocol:** provide the value of the security protocol to be used with the Kafka Server
-* **SASL Mechanism:** if the security protocol is provided as "SASL_SSL", then this parameter must be provided
+* **SASL Mechanism:** if the security protocol is provided as "SASL_SSL", then this parameter must be provided, use OAUTHBEARER for oauth auth
 * **TrustStore:** if the security protocol is provided as SSL or SASL_SSL, this parameter is an Appian document containing the TrustStore in JKS format
 * **KeyStore:** if the security protocol is provided as SSL, this parameter is an Appian document containing the KeyStore in JKS format
+* **Auto offset Reset Config:** Use earliest or latest to set the offset to be used. (default is latest)
 
 #### Output Parameters
 * **success:** returns _true_ if smart service completed successfully and _false_ if an exception has occurred
@@ -86,6 +93,7 @@ This Smart Service implements Kafka Consumer and subscribes to one topic on a Ka
 * **Polling Interval in Ms:** provide the number of milliseconds for the Kafka Consumer to poll a topic per iteration
 * **Sleeping Interval In Ms:** provide the number of milliseconds for the thread to sleep between polling iterations
 * **Session Timeout:** provide the number of milliseconds for the session timeout (default value is 30000)
+* **Auto Offset Reset Config:** provide the auto offset reset config (default value is latest)
 * **Deserializer Class Name:** full name of the class to be used with Kafka Consumer (default is text-based deserializer)
 * **Message Filter:** jsonpath filter used to filter out message before processing in Appian. JsonPath documentation can be [found here](https://goessner.net/articles/JsonPath/). Use [this site](https://jsonpath.herokuapp.com/) for testing.
 
